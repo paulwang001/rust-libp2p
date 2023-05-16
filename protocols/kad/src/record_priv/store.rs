@@ -25,7 +25,6 @@ use thiserror::Error;
 
 use super::*;
 use crate::K_VALUE;
-use std::borrow::Cow;
 
 /// The result of an operation on a `RecordStore`.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -46,6 +45,9 @@ pub enum Error {
     ValueTooLarge,
 }
 
+pub type RecordsIter = Box<dyn Iterator<Item = Record> + Send + Sync + 'static>;
+pub type ProviderRecordsIter = Box<dyn Iterator<Item = ProviderRecord> + Send + Sync + 'static>;
+
 /// Trait for types implementing a record store.
 ///
 /// There are two types of records managed by a `RecordStore`:
@@ -65,15 +67,9 @@ pub enum Error {
 ///      to the closest nodes to the key.
 ///
 pub trait RecordStore {
-    type RecordsIter<'a>: Iterator<Item = Cow<'a, Record>>
-    where
-        Self: 'a;
-    type ProvidedIter<'a>: Iterator<Item = Cow<'a, ProviderRecord>>
-    where
-        Self: 'a;
-
+    
     /// Gets a record from the store, given its key.
-    fn get(&self, k: &Key) -> Option<Cow<'_, Record>>;
+    fn get(&self, k: &Key) -> Option<Record>;
 
     /// Puts a record into the store.
     fn put(&mut self, r: Record) -> Result<()>;
@@ -82,7 +78,7 @@ pub trait RecordStore {
     fn remove(&mut self, k: &Key);
 
     /// Gets an iterator over all (value-) records currently stored.
-    fn records(&self) -> Self::RecordsIter<'_>;
+    fn records(&self) -> RecordsIter;
 
     /// Adds a provider record to the store.
     ///
@@ -96,7 +92,7 @@ pub trait RecordStore {
 
     /// Gets an iterator over all stored provider records for which the
     /// node owning the store is itself the provider.
-    fn provided(&self) -> Self::ProvidedIter<'_>;
+    fn provided(&self) -> ProviderRecordsIter;
 
     /// Removes a provider record from the store.
     fn remove_provider(&mut self, k: &Key, p: &PeerId);

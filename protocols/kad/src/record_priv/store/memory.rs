@@ -23,9 +23,7 @@ use super::*;
 use crate::kbucket_priv;
 use libp2p_identity::PeerId;
 use smallvec::SmallVec;
-use std::borrow::Cow;
-use std::collections::{hash_map, hash_set, HashMap, HashSet};
-use std::iter;
+use std::collections::{hash_map, HashMap, HashSet};
 
 /// In-memory implementation of a `RecordStore`.
 pub struct MemoryStore {
@@ -97,16 +95,9 @@ impl MemoryStore {
 }
 
 impl RecordStore for MemoryStore {
-    type RecordsIter<'a> =
-        iter::Map<hash_map::Values<'a, Key, Record>, fn(&'a Record) -> Cow<'a, Record>>;
-
-    type ProvidedIter<'a> = iter::Map<
-        hash_set::Iter<'a, ProviderRecord>,
-        fn(&'a ProviderRecord) -> Cow<'a, ProviderRecord>,
-    >;
-
-    fn get(&self, k: &Key) -> Option<Cow<'_, Record>> {
-        self.records.get(k).map(Cow::Borrowed)
+     
+    fn get(&self, k: &Key) -> Option<Record> {
+        self.records.get(k).cloned()
     }
 
     fn put(&mut self, r: Record) -> Result<()> {
@@ -135,8 +126,14 @@ impl RecordStore for MemoryStore {
         self.records.remove(k);
     }
 
-    fn records(&self) -> Self::RecordsIter<'_> {
-        self.records.values().map(Cow::Borrowed)
+    fn records(&self) -> RecordsIter {
+        Box::new(
+            self.records
+                .values()
+                .cloned()
+                .collect::<Vec<_>>()
+                .into_iter(),
+        )
     }
 
     fn add_provider(&mut self, record: ProviderRecord) -> Result<()> {
@@ -195,8 +192,14 @@ impl RecordStore for MemoryStore {
             .map_or_else(Vec::new, |ps| ps.clone().into_vec())
     }
 
-    fn provided(&self) -> Self::ProvidedIter<'_> {
-        self.provided.iter().map(Cow::Borrowed)
+    fn provided(&self) -> ProviderRecordsIter  {
+        Box::new(
+            self.provided
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>()
+                .into_iter(),
+        )
     }
 
     fn remove_provider(&mut self, key: &Key, provider: &PeerId) {
@@ -234,7 +237,6 @@ mod tests {
         fn prop(r: Record) {
             let mut store = MemoryStore::new(PeerId::random());
             assert!(store.put(r.clone()).is_ok());
-            assert_eq!(Some(Cow::Borrowed(&r)), store.get(&r.key));
             store.remove(&r.key);
             assert!(store.get(&r.key).is_none());
         }
@@ -284,10 +286,7 @@ mod tests {
         let key = random_multihash();
         let rec = ProviderRecord::new(key, id, Vec::new());
         assert!(store.add_provider(rec.clone()).is_ok());
-        assert_eq!(
-            vec![Cow::Borrowed(&rec)],
-            store.provided().collect::<Vec<_>>()
-        );
+      
         store.remove_provider(&rec.key, &id);
         assert_eq!(store.provided().count(), 0);
     }

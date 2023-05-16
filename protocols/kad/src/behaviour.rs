@@ -694,7 +694,7 @@ where
             } else {
                 Some(PeerRecord {
                     peer: None,
-                    record: record.into_owned(),
+                    record,
                 })
             }
         } else {
@@ -2184,7 +2184,7 @@ where
                             self.store.remove(&key);
                             None
                         } else {
-                            Some(record.into_owned())
+                            Some(record)
                         }
                     }
                     None => None,
