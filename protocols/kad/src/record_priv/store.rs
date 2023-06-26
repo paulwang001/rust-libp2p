@@ -45,8 +45,8 @@ pub enum Error {
     ValueTooLarge,
 }
 
-pub type RecordsIter = Box<dyn Iterator<Item = Record> + Send + Sync + 'static>;
-pub type ProviderRecordsIter = Box<dyn Iterator<Item = ProviderRecord> + Send + Sync + 'static>;
+pub type RecordsIter = Box<dyn Iterator<Item = Record> + Send + Sync>;
+pub type ProviderRecordsIter = Box<dyn Iterator<Item = ProviderRecord> + Send + Sync>;
 
 /// Trait for types implementing a record store.
 ///
