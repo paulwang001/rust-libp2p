@@ -293,8 +293,8 @@ impl<TResponse> ResponseChannel<TResponse> {
 /// uniqueness guarantee in a set of both inbound and outbound
 /// [`RequestId`]s nor in a set of inbound or outbound requests
 /// originating from different [`Behaviour`]'s.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct RequestId(u64);
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash,Default)]
+pub struct RequestId(pub u64);
 
 impl fmt::Display for RequestId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
